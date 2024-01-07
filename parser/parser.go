@@ -72,7 +72,40 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
+
 	return p
+}
+
+func (p *Parser) parseCallExpression(function ast2.Expression) ast2.Expression {
+	exp := &ast2.CallExpression{Token: p.curToken, Function: function}
+	exp.Arguments = p.parseCallArguments()
+
+	return exp
+}
+
+func (p *Parser) parseCallArguments() []ast2.Expression {
+	args := []ast2.Expression{}
+
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return args
+	}
+
+	p.nextToken()
+	args = append(args, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	return args
 }
 
 func (p *Parser) parseFunctionLiteral() ast2.Expression {
@@ -247,17 +280,24 @@ func (p *Parser) parseLetStatement() *ast2.LetStatement {
 		return nil
 	}
 
-	stmt.Name = &ast2.Identifier{
-		Token: p.curToken,
-		Value: p.curToken.Literal,
-	}
+	p.nextToken()
+	stmt.Value = p.parseExpression(LOWEST)
 
-	if !p.expectPeek(token.ASSIGN) {
-		return nil
-	}
+	//stmt.Name = &ast2.Identifier{
+	//	Token: p.curToken,
+	//	Value: p.curToken.Literal,
+	//}
+	//
+	//if !p.expectPeek(token.ASSIGN) {
+	//	return nil
+	//}
 
 	// TODO 跳过对表达式的处理，直到遇见分号
-	for !p.curTokenIs(token.SEMICOLON) {
+	//for !p.curTokenIs(token.SEMICOLON) {
+	//	p.nextToken()
+	//}
+
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
@@ -295,10 +335,16 @@ func (p *Parser) parseReturnStatement() *ast2.ReturnStatement {
 
 	p.nextToken()
 
-	// TODO 跳过对表达式的处理，直到遇见分号
-	for !p.curTokenIs(token.SEMICOLON) {
+	stmt.ReturnValue = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
+
+	// TODO 跳过对表达式的处理，直到遇见分号
+	//for !p.curTokenIs(token.SEMICOLON) {
+	//	p.nextToken()
+	//}
 
 	return stmt
 }
@@ -366,6 +412,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 func (p *Parser) peekPrecedence() int {

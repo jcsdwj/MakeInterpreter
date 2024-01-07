@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io"
 	"lexer/lexer"
-	"lexer/token"
+	"lexer/parser"
 )
 
 const PROMPT = ">>"
@@ -28,8 +28,58 @@ func Start(in io.Reader, out io.Writer) {
 
 		line := scanner.Text()
 		l := lexer.New(line)
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-			fmt.Fprintf(out, "%s\n", tok.Literal)
+		p := parser.New(l)
+
+		program := p.ParseProgram()
+
+		if len(p.Errors()) != 0 {
+			printParserErrors(out, p.Errors())
+			continue
 		}
+
+		io.WriteString(out, program.String())
+		io.WriteString(out, "\n")
+
+		//for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
+		//	fmt.Fprintf(out, "%s\n", tok.Literal)
+		//}
+	}
+}
+
+func printParserErrors(out io.Writer, errors []string) {
+	for _, msg := range errors {
+		io.WriteString(out, "\t"+msg+"\n")
+	}
+}
+
+const MONKEY_FACE = `
+          ┌─┐       ┌─┐
+       ┌──┘ ┴───────┘ ┴──┐
+       │                 │
+       │       ───       │
+       │  ─┬┘       └┬─  │
+       │                 │
+       │       ─┴─       │
+       │                 │
+       └───┐         ┌───┘
+           │         │
+           │         │
+           │         │
+           │         └──────────────┐
+           │                        │
+           │                        ├─┐
+           │                        ┌─┘    
+           │                        │
+           └─┐  ┐  ┌───────┬──┐  ┌──┘         
+             │ ─┤ ─┤       │ ─┤ ─┤         
+             └──┴──┘       └──┴──┘ 
+`
+
+func printParseErrors(out io.Writer, errors []string) {
+	io.WriteString(out, MONKEY_FACE)
+	io.WriteString(out, "Woops! We run into some monkey business here!\n")
+	io.WriteString(out, "parser errors:\n")
+	for _, msg := range errors {
+		io.WriteString(out, "\t"+msg+"\n")
 	}
 }

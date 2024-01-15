@@ -4,7 +4,7 @@
   @desc: //TODO
 **/
 
-package lexer
+package makeInterpreter
 
 import (
 	"fmt"

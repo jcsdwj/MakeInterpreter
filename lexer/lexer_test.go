@@ -37,7 +37,7 @@ func TestNextToken(t *testing.T) {
 	}
 }
 
-func TestNexToken2(t *testing.T) {
+func TestNextToken2(t *testing.T) {
 	input := `
 	let five = 5;
 	let ten = 10;
@@ -61,6 +61,9 @@ let result = add(five,ten);
 		{token.INT, "5"},
 		{token.SEMICOLON, ";"},
 		{token.LET, "let"},
+		{token.STRING, "foobar"},
+		{token.STRING, "foo bar"},
+		{token.EOF, ""},
 	}
 
 	I := New(input)

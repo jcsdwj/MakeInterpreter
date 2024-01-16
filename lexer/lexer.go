@@ -43,6 +43,9 @@ func (l *Lexer) NextToken() token.Token {
 	l.skipWhitespace()
 
 	switch l.ch {
+	case byte(0):
+		tok.Type = token.STRING
+		tok.Literal = l.readString()
 	case '=':
 		if l.peekChar() == '=' {
 			ch := l.ch
@@ -161,4 +164,17 @@ func (l *Lexer) peekChar() byte {
 		return 0
 	}
 	return l.input[l.readPosition]
+}
+
+// Go中怎么表示byte("")
+func (l *Lexer) readString() string {
+	position := l.position + 1
+	for {
+		l.readChar()
+		if l.ch == byte(0) || l.ch == 0 {
+			break
+		}
+	}
+
+	return l.input[position : position+1]
 }

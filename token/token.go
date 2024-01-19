@@ -48,6 +48,9 @@ const (
 
 	EQ     = "=="
 	NOT_EQ = "!="
+
+	LBRACKET = "["
+	RBRACKET = "]"
 )
 
 // 关键字

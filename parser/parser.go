@@ -74,7 +74,13 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
+	p.registerPrefix(token.STRING, p.parseStringLiteral)
+
 	return p
+}
+
+func (p *Parser) parseStringLiteral() ast2.Expression {
+	return &ast2.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
 }
 
 func (p *Parser) parseCallExpression(function ast2.Expression) ast2.Expression {

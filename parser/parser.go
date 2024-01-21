@@ -26,6 +26,7 @@ const (
 	PRODUCT     // *
 	PREFIX      // -X or !X
 	CALL        // myFunction(X)
+	INDEX       //array[index]
 )
 
 type Parser struct {
@@ -76,7 +77,42 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 
+	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
+
+	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
+
 	return p
+}
+
+func (p *Parser) parseArrayLiteral() ast2.Expression {
+	array := &ast2.ArrayLiteral{Token: p.curToken}
+
+	array.Elements = p.parseExpressionList(token.RBRACKET)
+	return array
+}
+
+func (p *Parser) parseExpressionList(end token.TokenType) []ast2.Expression {
+	list := []ast2.Expression{}
+
+	if p.peekTokenIs(end) {
+		p.nextToken()
+		return list
+	}
+
+	p.nextToken()
+	list = append(list, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		list = append(list, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(end) {
+		return nil
+	}
+
+	return list
 }
 
 func (p *Parser) parseStringLiteral() ast2.Expression {
@@ -85,8 +121,8 @@ func (p *Parser) parseStringLiteral() ast2.Expression {
 
 func (p *Parser) parseCallExpression(function ast2.Expression) ast2.Expression {
 	exp := &ast2.CallExpression{Token: p.curToken, Function: function}
-	exp.Arguments = p.parseCallArguments()
-
+	// exp.Arguments = p.parseCallArguments()
+	exp.Arguments = p.parseExpressionList(token.RPAREN)
 	return exp
 }
 
@@ -419,6 +455,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
+	token.LBRACKET: INDEX,
 }
 
 func (p *Parser) peekPrecedence() int {
@@ -474,4 +511,17 @@ func (p *Parser) parseFunctionParameters() []*ast2.Identifier {
 	}
 
 	return identifiers
+}
+
+func (p *Parser) parseIndexExpression(left ast2.Expression) ast2.Expression {
+	exp := &ast2.IndexExpression{Token: p.curToken, Left: left}
+
+	p.nextToken()
+	exp.Index = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RBRACKET) {
+		return nil
+	}
+
+	return exp
 }

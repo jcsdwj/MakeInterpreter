@@ -51,6 +51,8 @@ const (
 
 	LBRACKET = "["
 	RBRACKET = "]"
+
+	COLON = ":"
 )
 
 // 关键字

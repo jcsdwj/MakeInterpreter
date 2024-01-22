@@ -6,7 +6,10 @@
 
 package evaluator
 
-import "lexer/object"
+import (
+	"fmt"
+	"lexer/object"
+)
 
 var builtins = map[string]*object.Builtin{
 	"len": &object.Builtin{
@@ -112,4 +115,12 @@ var builtins = map[string]*object.Builtin{
 			}
 		},
 	},
+
+	"put": &object.Builtin{Fn: func(args ...object.Object) object.Object {
+		for _, arg := range args {
+			fmt.Println(arg.Inspect())
+		}
+
+		return NULL
+	}},
 }

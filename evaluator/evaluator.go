@@ -129,6 +129,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if isError(function) {
 			return function
 		}
+		if node.Function.TokenLiteral() == "quote" {
+			return quote(node.Arguments[0])
+		}
 		args := evalExpressions(node.Arguments, env)
 		if len(args) == 1 && isError(args[0]) {
 			return args[0]

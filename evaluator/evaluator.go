@@ -130,7 +130,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return function
 		}
 		if node.Function.TokenLiteral() == "quote" {
-			return quote(node.Arguments[0])
+			return quote(node.Arguments[0], env)
 		}
 		args := evalExpressions(node.Arguments, env)
 		if len(args) == 1 && isError(args[0]) {

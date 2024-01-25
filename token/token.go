@@ -53,6 +53,7 @@ const (
 	RBRACKET = "]"
 
 	COLON = ":"
+	MACRO = "MACRO"
 )
 
 // 关键字
@@ -64,6 +65,7 @@ var keywords = map[string]TokenType{
 	"if":     IF,
 	"else":   ELSE,
 	"return": RETURN,
+	"marco":  MACRO,
 }
 
 // 区分语言关键字和用户定义标识符  判断给定的单词是否为关键字

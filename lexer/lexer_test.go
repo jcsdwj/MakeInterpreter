@@ -21,6 +21,7 @@ func TestNextToken(t *testing.T) {
 		{token.COMMA, ","},
 		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
+		{token.MACRO, "macro"},
 	}
 	I := New(input)
 	for i, tt := range tests {

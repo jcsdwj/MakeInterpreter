@@ -10,18 +10,18 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"lexer/evaluator"
+	"lexer/compiler"
 	"lexer/lexer"
-	"lexer/object"
 	"lexer/parser"
+	"lexer/vm"
 )
 
 const PROMPT = ">>"
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
-	macroEnv := object.NewEnvironment()
+	//env := object.NewEnvironment()
+	//macroEnv := object.NewEnvironment()
 
 	for {
 		fmt.Fprintf(out, PROMPT)
@@ -40,15 +40,15 @@ func Start(in io.Reader, out io.Writer) {
 			printParserErrors(out, p.Errors())
 			continue
 		}
-		evaluator.DefineMacros(program, macroEnv)
-		expanded := evaluator.ExpandMacros(program, macroEnv)
+		//evaluator.DefineMacros(program, macroEnv)
+		//expanded := evaluator.ExpandMacros(program, macroEnv)
 
 		// evaluated := evaluator.Eval(program, env)
-		evaluated := evaluator.Eval(expanded, env)
-		if evaluated != nil {
-			io.WriteString(out, evaluated.Inspect())
-			io.WriteString(out, "\n")
-		}
+		//evaluated := evaluator.Eval(expanded, env)
+		//if evaluated != nil {
+		//	io.WriteString(out, evaluated.Inspect())
+		//	io.WriteString(out, "\n")
+		//}
 		//io.WriteString(out, program.String())
 		//io.WriteString(out, "\n")
 
@@ -56,6 +56,27 @@ func Start(in io.Reader, out io.Writer) {
 		//	fmt.Fprintf(out, "%s\n", tok.Literal)
 		//}
 
+		comp := compiler.New()
+		err := comp.Compile(program)
+		if err != nil {
+			fmt.Fprintf(out, "Woops! Compilation failed:\n%s\n", err)
+			continue
+		}
+
+		machine := vm.New(comp.ByteCode())
+		err = machine.Run()
+		if err != nil {
+			fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s\n", err)
+			continue
+		}
+
+		//stackTop := machine.StackTop()
+		//io.WriteString(out, stackTop.Inspect())
+		//io.WriteString(out, "\n")
+
+		lastPopped := machine.LastPoppedStackElem()
+		io.WriteString(out, lastPopped.Inspect())
+		io.WriteString(out, "\n")
 	}
 }
 

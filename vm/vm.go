@@ -15,12 +15,16 @@ import (
 
 const StackSize = 2048
 
+const GlobalsSize = 65536
+
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
 
 	stack []object.Object
 	sp    int // 始终指向栈中的下一个空闲槽 栈顶的值是stack[sp-1]
+
+	globals []object.Object
 }
 
 func New(bytecode *compiler.ByteCode) *VM {
@@ -30,6 +34,8 @@ func New(bytecode *compiler.ByteCode) *VM {
 
 		stack: make([]object.Object, StackSize),
 		sp:    0,
+
+		globals: make([]object.Object, GlobalsSize),
 	}
 }
 
@@ -46,6 +52,42 @@ func (vm *VM) Run() error {
 	for ip := 0; ip < len(vm.instructions); ip++ {
 		op := code.Opcode(vm.instructions[ip])
 		switch op {
+		case code.OpHash:
+			numElements := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+			hash, err := vm.buildHash(vm.sp-numElements, vm.sp)
+			if err != nil {
+				return err
+			}
+			vm.sp = vm.sp - numElements
+
+			err = vm.push(hash)
+			if err != nil {
+				return err
+			}
+		case code.OpArray:
+			numElements := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+			array := vm.buildArray(vm.sp-numElements, vm.sp)
+			vm.sp = vm.sp - numElements
+
+			err := vm.push(array)
+			if err != nil {
+				return err
+			}
+		case code.OpGetGlobal:
+			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			err := vm.push(vm.globals[globalIndex])
+			if err != nil {
+				return err
+			}
+		case code.OpSetGlobal:
+			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			vm.globals[globalIndex] = vm.pop()
 		case code.OpNull:
 			err := vm.push(Null)
 			if err != nil {
@@ -133,11 +175,19 @@ func (vm *VM) executeBinaryOperation(op code.Opcode) error {
 	leftType := left.Type()
 	rightType := right.Type()
 
-	if leftType == object.INTEGER_OBJ && rightType == object.INTEGER_OBJ {
+	switch {
+	case leftType == object.INTEGER_OBJ && rightType == object.INTEGER_OBJ:
 		return vm.executeBinaryIntegerOperation(op, left, right)
+	case leftType == object.STRING_OBJ && rightType == object.STRING_OBJ:
+		return vm.executeBinaryStringOperation(op, left, right)
+	default:
+		return fmt.Errorf("unspported types for binary operation: %s%s", leftType, rightType)
+		//if leftType == object.INTEGER_OBJ && rightType == object.INTEGER_OBJ {
+		//	return vm.executeBinaryIntegerOperation(op, left, right)
+		//}
+		//
+		//return fmt.Errorf("unspported types for binary operation: %s%s", leftType, rightType)
 	}
-
-	return fmt.Errorf("unspported types for binary operation: %s%s", leftType, rightType)
 }
 
 func (vm *VM) executeBinaryIntegerOperation(op code.Opcode, left, right object.Object) error {
@@ -241,6 +291,47 @@ func (vm *VM) executeMinusOperator() error {
 	return vm.push(&object.Integer{Value: -value})
 }
 
+func (vm *VM) executeBinaryStringOperation(op code.Opcode, left object.Object, right object.Object) error {
+	if op != code.OpAdd {
+		return fmt.Errorf("unknown string operation: %d", op)
+	}
+
+	leftValue := left.(*object.String).Value
+	rightValue := right.(*object.String).Value
+
+	return vm.push(&object.String{Value: leftValue + rightValue})
+}
+
+func (vm *VM) buildArray(startIndex int, endIndex int) object.Object {
+	elements := make([]object.Object, endIndex-startIndex)
+
+	for i := startIndex; i < endIndex; i++ {
+		elements[i-startIndex] = vm.stack[i]
+	}
+
+	return &object.Array{Elements: elements}
+}
+
+func (vm *VM) buildHash(startIndex int, endIndex int) (object.Object, error) {
+	hashedPairs := make(map[object.HashKey]object.HashPair)
+
+	for i := startIndex; i < endIndex; i++ {
+		key := vm.stack[i]
+		value := vm.stack[i]
+
+		pair := object.HashPair{Key: key, Value: value}
+
+		hashKey, ok := key.(object.Hashable)
+		if !ok {
+			return nil, fmt.Errorf("unusable as hash key:%s", key.Type())
+		}
+
+		hashedPairs[hashKey.HashKey()] = pair
+	}
+
+	return &object.Hash{Pairs: hashedPairs}, nil
+}
+
 func nativeBoolToBooleanObject(input bool) *object.Boolean {
 	if input {
 		return True
@@ -254,3 +345,9 @@ var True = &object.Boolean{
 var False = &object.Boolean{Value: false}
 
 var Null = &object.Boolean{}
+
+func NewWithGlobalsStore(bytecode *compiler.ByteCode, s []object.Object) *VM {
+	vm := New(bytecode)
+	vm.globals = s
+	return vm
+}

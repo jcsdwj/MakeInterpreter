@@ -12,6 +12,7 @@ import (
 	"io"
 	"lexer/compiler"
 	"lexer/lexer"
+	"lexer/object"
 	"lexer/parser"
 	"lexer/vm"
 )
@@ -22,6 +23,9 @@ func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	//env := object.NewEnvironment()
 	//macroEnv := object.NewEnvironment()
+	constants := []object.Object{}
+	globals := make([]object.Object, vm.GlobalsSize)
+	symbolTable := compiler.NewSymbolTable()
 
 	for {
 		fmt.Fprintf(out, PROMPT)
@@ -63,7 +67,12 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		machine := vm.New(comp.ByteCode())
+		code := comp.ByteCode()
+		constants = code.Constants
+
+		machine := vm.NewWithGlobalsStore(code, globals)
+
+		// machine := vm.New(comp.ByteCode())
 		err = machine.Run()
 		if err != nil {
 			fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s\n", err)

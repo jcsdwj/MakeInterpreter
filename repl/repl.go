@@ -60,7 +60,7 @@ func Start(in io.Reader, out io.Writer) {
 		//	fmt.Fprintf(out, "%s\n", tok.Literal)
 		//}
 
-		comp := compiler.New()
+		comp := compiler.NewWithState(symbolTable, constants)
 		err := comp.Compile(program)
 		if err != nil {
 			fmt.Fprintf(out, "Woops! Compilation failed:\n%s\n", err)

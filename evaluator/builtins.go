@@ -12,6 +12,7 @@ import (
 )
 
 var builtins = map[string]*object.Builtin{
+	//"len":&object.GetBuiltinByName("len"),
 	"len": &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {

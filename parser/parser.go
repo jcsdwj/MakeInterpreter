@@ -347,6 +347,10 @@ func (p *Parser) parseLetStatement() *ast2.LetStatement {
 	p.nextToken()
 	stmt.Value = p.parseExpression(LOWEST)
 
+	if fl, ok := stmt.Value.(*ast2.FunctionLiteral); ok {
+		fl.Name = stmt.Name.Value
+	}
+
 	//stmt.Name = &ast2.Identifier{
 	//	Token: p.curToken,
 	//	Value: p.curToken.Literal,

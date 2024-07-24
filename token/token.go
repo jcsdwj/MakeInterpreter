@@ -68,7 +68,11 @@ var keywords = map[string]TokenType{
 	"marco":  MACRO,
 }
 
-// 区分语言关键字和用户定义标识符  判断给定的单词是否为关键字
+/**
+ * @Description: 区分语言关键字和用户定义标识符  判断给定的单词是否为关键字
+ * @param ident
+ * @return TokenType
+ */
 func LookupIdent(ident string) TokenType {
 	if tok, ok := keywords[ident]; ok {
 		// 返回关键字

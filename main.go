@@ -4,7 +4,7 @@
   @desc: //TODO
 **/
 
-package makeInterpreter
+package main
 
 import (
 	"fmt"
@@ -23,3 +23,6 @@ func main() {
 	fmt.Printf("Feel free to type in commands!\n")
 	repl.Start(os.Stdin, os.Stdout)
 }
+
+// 输入
+// let add = fn(x,y){ x+y; };

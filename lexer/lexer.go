@@ -9,7 +9,11 @@ type Lexer struct {
 	ch           byte   // 当前正在查看的字符
 }
 
-// 初始化
+/**
+ * @Description: 创建
+ * @param input
+ * @return *Lexer
+ */
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
 	l.readChar()
@@ -21,8 +25,8 @@ func New(input string) *Lexer {
  * @receiver l
  */
 func (l *Lexer) readChar() {
+	// 判断是否读到末尾 读到设置当前字符为0(NULL的ASCII编码)
 	if l.readPosition >= len(l.input) {
-		// 读到末尾设置ch为0
 		l.ch = 0
 	} else {
 		l.ch = l.input[l.readPosition]
@@ -32,11 +36,10 @@ func (l *Lexer) readChar() {
 }
 
 /**
- * @Description:遍历源代码生成词法单元
+ * @Description:遍历源代码生成词法单元(获取下一个词法单元)
  * @receiver l
  * @return token.Token
  */
-// 获取下一个词法单元
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -49,14 +52,15 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.LBRACKET, l.ch)
 	case ']':
 		tok = newToken(token.RBRACKET, l.ch)
-	case byte(0):
-		tok.Type = token.STRING
-		tok.Literal = l.readString()
+	//case byte(0):
+	//	tok.Type = token.STRING
+	//	tok.Literal = l.readString()
 	case '=':
+		// 查看下一个字符是不是'='
 		if l.peekChar() == '=' {
 			ch := l.ch
 			l.readChar()
-			literal := string(ch) + string(l.ch)
+			literal := string(ch) + string(l.ch) // == 情况
 			tok = token.Token{Type: token.EQ, Literal: literal}
 		} else {
 			tok = newToken(token.ASSIGN, l.ch)
@@ -89,7 +93,7 @@ func (l *Lexer) NextToken() token.Token {
 		if l.peekChar() == '=' {
 			ch := l.ch
 			l.readChar()
-			literal := string(ch) + string(l.ch)
+			literal := string(ch) + string(l.ch) // !=情况
 			tok = token.Token{Type: token.NOT_EQ, Literal: literal}
 		} else {
 			tok = newToken(token.BANG, l.ch)
@@ -99,10 +103,12 @@ func (l *Lexer) NextToken() token.Token {
 		tok.Type = token.EOF
 	default:
 		if isLetter(l.ch) {
+			// 如果是字母 读取剩余部分
 			tok.Literal = l.readIdentifier()
 			tok.Type = token.LookupIdent(tok.Literal)
 			return tok
 		} else if isDigit(l.ch) {
+			// 数字词法单元
 			tok.Type = token.INT
 			tok.Literal = l.readNumber()
 			return tok
@@ -115,7 +121,12 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
-// 构建词法单元
+/**
+ * @Description: 构建词法单元
+ * @param t
+ * @param ch
+ * @return token.Token
+ */
 func newToken(t token.TokenType, ch byte) token.Token {
 	return token.Token{Type: t, Literal: string(ch)}
 }
@@ -165,6 +176,11 @@ func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
 }
 
+/**
+ * @Description: 返回下一个字符但不移动指针
+ * @receiver l
+ * @return byte
+ */
 func (l *Lexer) peekChar() byte {
 	if l.readPosition >= len(l.input) {
 		return 0
